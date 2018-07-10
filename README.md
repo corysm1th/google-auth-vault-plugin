@@ -27,7 +27,7 @@ authenticated.
 
   e.g.
   ```sh
-  $ sudo setcap cap_ipc_lock=+ep /etc/vault/plugins/google-auth-vault-plugin
+  $ sudo setcap cap_ipc_lock=+ep /etc/vault.d/plugins/google-auth-vault-plugin
   ```
 
 * You need to set [api_addr](https://www.vaultproject.io/docs/configuration/index.html#api_addr)
