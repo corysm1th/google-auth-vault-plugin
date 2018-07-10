@@ -10,18 +10,40 @@ authenticated.
 
 1. Compile the plugin from source.
 
+* When building remember your target platform.
+
+  e.g. on MacOS targeting Linux:
+  ```sh
+  GOOS=linux make
+  ```
+
 2. Move the compiled plugin into Vault's configured `plugin_directory`:
 
    ```sh
-   $ mv google-auth-vault-plugin /etc/vault/plugins/google-auth-vault-plugin
+   $ mv google-auth-vault-plugin /etc/vault.d/plugins/google-auth-vault-plugin
    ```
+
+* Ensure the plugin has the IPC_CAP (shared memory) as well as vault.
+
+  e.g.
+  ```sh
+  $ sudo setcap cap_ipc_lock=+ep /etc/vault/plugins/google-auth-vault-plugin
+  ```
+
+* You need to set [api_addr](https://www.vaultproject.io/docs/configuration/index.html#api_addr)
+
+  This can be set at the top level for a standalone setup, or in a ha_storage stanza.
+
+```json
+api_addr          = "https://vault.mydomain.net:8200"
+```
 
 1. Calculate the SHA256 of the plugin and register it in Vault's plugin catalog.
 If you are downloading the pre-compiled binary, it is highly recommended that
 you use the published checksums to verify integrity.
 
    ```sh
-   $ export SHA256=$(shasum -a 256 "/etc/vault/plugins/google-auth-vault-plugin" | cut -d' ' -f1)
+   $ export SHA256=$(shasum -a 256 "/etc/vault.d/plugins/google-auth-vault-plugin" | cut -d' ' -f1)
    $ vault write sys/plugins/catalog/google-auth-vault-plugin \
        sha_256="${SHA256}" \
        command="google-auth-vault-plugin"
@@ -30,7 +52,7 @@ you use the published checksums to verify integrity.
 1. Mount the auth method:
 
    ```sh
-   $ vault auth-enable \
+   $ vault auth enable \
        -path="google" \
        -plugin-name="google-auth-vault-plugin" plugin
    ```
@@ -83,24 +105,6 @@ you use the published checksums to verify integrity.
    $ vault write auth/google/login code=$GOOGLE_CODE role=hello
    ```
 
-## Notes
-
-* If running this inside a docker container or similar, you need to ensure the plugin has the IPC_CAP as well as vault.
-
-  e.g.
-  ```sh
-  $ sudo setcap cap_ipc_lock=+ep /etc/vault/plugins/google-auth-vault-plugin
-  ```
-
-* When building remember your target platform.
-
-  e.g. on MacOS targeting Linux:
-  ```sh
-  GOOS=linux make
-  ```
-* You may need to set [api_addr](https://www.vaultproject.io/docs/configuration/index.html#api_addr)
-
-  This can be set at the top level for a standalone setup, or in a ha_storage stanza.
 
 ## License
 
