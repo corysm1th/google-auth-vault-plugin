@@ -51,6 +51,10 @@ func newBackend() *backend {
 						Type:        framework.TypeString,
 						Description: "Google application secret",
 					},
+					fetchGroupsPropertyName: &framework.FieldSchema{
+						Type:        framework.TypeBool,
+						Description: "Fetch Google Groups",
+					},
 				},
 
 				Callbacks: map[logical.Operation]framework.OperationFunc{

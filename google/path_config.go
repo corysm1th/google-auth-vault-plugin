@@ -15,6 +15,7 @@ const (
 	configPath                     = "config"
 	clientIDConfigPropertyName     = "client_id"
 	clientSecretConfigPropertyName = "client_secret"
+	fetchGroupsPropertyName        = "fetch_groups"
 	configEntry                    = "config"
 )
 
@@ -22,11 +23,13 @@ func (b *backend) pathConfigWrite(ctx context.Context, req *logical.Request, dat
 	var (
 		clientID     = data.Get(clientIDConfigPropertyName).(string)
 		clientSecret = data.Get(clientSecretConfigPropertyName).(string)
+		fetchGroups  = data.Get(fetchGroupsPropertyName).(bool)
 	)
 
 	entry, err := logical.StorageEntryJSON(configEntry, config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
+		FetchGroups:  fetchGroups,
 	})
 	if err != nil {
 		return nil, err
@@ -47,6 +50,7 @@ func (b *backend) pathConfigRead(ctx context.Context, req *logical.Request, data
 	configMap := map[string]interface{}{
 		clientIDConfigPropertyName:     config.ClientID,
 		clientSecretConfigPropertyName: config.ClientSecret,
+		fetchGroupsPropertyName:        config.FetchGroups,
 	}
 
 	return &logical.Response{
