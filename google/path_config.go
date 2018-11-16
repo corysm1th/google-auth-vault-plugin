@@ -12,24 +12,39 @@ import (
 )
 
 const (
-	configPath                     = "config"
-	clientIDConfigPropertyName     = "client_id"
-	clientSecretConfigPropertyName = "client_secret"
-	fetchGroupsPropertyName        = "fetch_groups"
-	configEntry                    = "config"
+	configPath                      = "config"
+	clientIDConfigPropertyName      = "client_id"
+	clientSecretConfigPropertyName  = "client_secret"
+	fetchGroupsPropertyName         = "fetch_groups"
+	impersonationPropertyName       = "impersonation"
+	adminServiceAccountPropertyName = "admin_service_account"
+	configEntry                     = "config"
 )
 
 func (b *backend) pathConfigWrite(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	var (
-		clientID     = data.Get(clientIDConfigPropertyName).(string)
-		clientSecret = data.Get(clientSecretConfigPropertyName).(string)
-		fetchGroups  = data.Get(fetchGroupsPropertyName).(bool)
+		clientID            = data.Get(clientIDConfigPropertyName).(string)
+		clientSecret        = data.Get(clientSecretConfigPropertyName).(string)
+		fetchGroups         = data.Get(fetchGroupsPropertyName).(bool)
+		impersonation       = data.Get(impersonationPropertyName).(string)
+		adminServiceAccount = data.Get(adminServiceAccountPropertyName).(string)
 	)
 
+	if fetchGroups {
+		if impersonation == "" {
+			return nil, fmt.Errorf("%s must be configured when %s is enabled", impersonationPropertyName, fetchGroupsPropertyName)
+		}
+		if adminServiceAccount == "" {
+			return nil, fmt.Errorf("%s must be configured when %s is enabled", adminServiceAccountPropertyName, fetchGroupsPropertyName)
+		}
+	}
+
 	entry, err := logical.StorageEntryJSON(configEntry, config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		FetchGroups:  fetchGroups,
+		ClientID:            clientID,
+		ClientSecret:        clientSecret,
+		FetchGroups:         fetchGroups,
+		Impersonation:       impersonation,
+		AdminServiceAccount: adminServiceAccount,
 	})
 	if err != nil {
 		return nil, err
@@ -48,9 +63,11 @@ func (b *backend) pathConfigRead(ctx context.Context, req *logical.Request, data
 	}
 
 	configMap := map[string]interface{}{
-		clientIDConfigPropertyName:     config.ClientID,
-		clientSecretConfigPropertyName: config.ClientSecret,
-		fetchGroupsPropertyName:        config.FetchGroups,
+		clientIDConfigPropertyName:      config.ClientID,
+		clientSecretConfigPropertyName:  config.ClientSecret,
+		fetchGroupsPropertyName:         config.FetchGroups,
+		impersonationPropertyName:       config.Impersonation,
+		adminServiceAccountPropertyName: config.AdminServiceAccount,
 	}
 
 	return &logical.Response{
@@ -77,9 +94,11 @@ func (b *backend) config(ctx context.Context, s logical.Storage) (*config, error
 }
 
 type config struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	FetchGroups  bool   `json:"fetch_groups"`
+	ClientID            string `json:"client_id"`
+	ClientSecret        string `json:"client_secret"`
+	FetchGroups         bool   `json:"fetch_groups"`
+	Impersonation       string `json:"impersonation"`
+	AdminServiceAccount string `json:"admin_service_account"`
 }
 
 func (c *config) oauth2Config() *oauth2.Config {
@@ -91,9 +110,6 @@ func (c *config) oauth2Config() *oauth2.Config {
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email",
 		},
-	}
-	if c.FetchGroups {
-		config.Scopes = append(config.Scopes, "https://www.googleapis.com/auth/admin.directory.group.readonly")
 	}
 	return config
 }

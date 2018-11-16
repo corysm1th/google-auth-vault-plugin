@@ -2,10 +2,12 @@ package google
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/admin/directory/v1"
 	goauth "google.golang.org/api/oauth2/v2"
 
@@ -142,7 +144,18 @@ func (b *backend) authenticate(config *config, token *oauth2.Token) (*goauth.Use
 
 	groups := []string{}
 	if config.FetchGroups {
-		groupsService, err := admin.New(client)
+		jsonCredentials, err := base64.StdEncoding.DecodeString(config.AdminServiceAccount)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error decoding base64 service account credentials from config: %s", err)
+		}
+		adminAuthConfig, err := google.JWTConfigFromJSON(jsonCredentials, admin.AdminDirectoryGroupReadonlyScope)
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to parse client secret file to config: %s", err)
+		}
+		adminAuthConfig.Subject = config.Impersonation
+		adminClient := adminAuthConfig.Client(context.Background())
+
+		groupsService, err := admin.New(adminClient)
 		if err != nil {
 			return nil, nil, err
 		}
