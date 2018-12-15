@@ -78,9 +78,7 @@ you use the published checksums to verify integrity.
        policies=hello
    ```
 
-   The plugin can also map users to policies via Google Groups; however you need to consider how groups are retrieved and whether having administative permissions for the plugin is acceptable.
-
-   **Use with caution.**
+   The plugin can also map users to policies via Google Groups, however this needs a bit more setup (more info below).
 
    Alternative auth method with groups enabled:
    ```sh
@@ -88,6 +86,8 @@ you use the published checksums to verify integrity.
        client_id=<GOOGLE_CLIENT_ID> \
        client_secret=<GOOGLE_CLIENT_SECRET> \
        fetch_groups=true
+       impersonation=some.admin@your-google-domain.com
+       admin_service_account=base64-encoded-service-account-json-file
    ```
 
    Create a role for a Google group mapping to a set of policies:
@@ -104,6 +104,28 @@ you use the published checksums to verify integrity.
    $ open $(vault read -field=url auth/google/code_url)
    $ vault write auth/google/login code=$GOOGLE_CODE role=hello
    ```
+
+
+## Setup of group retrieval
+
+To get groups information the plugin needs to access the Google Admin Directory API which is only possible for users with admin privileges. The plugin cannot use the user provided token to do this because this would mean that all authenticating users would need permission to the admin API. Therefore a serivce account with G Suite Domain-Wide Delegation of Authority is needed.
+
+Please follow this guide on how to create one and authorize it: https://developers.google.com/admin-sdk/directory/v1/guides/delegation
+
+You don't have to grant the read/write scopes that the guide tells you to, this plugin only needs `https://www.googleapis.com/auth/admin.directory.group.readonly`.
+Once this is done you can fill in the config values from the `groups_enabled` example above.
+
+The base64 `admin_service_account` value can be generated like this:
+
+```sh
+cat your-json-service-account-file | base64 -w0`.
+```
+
+The `impersonation` field needs to be the Google account email address of a real admin user which the service account will impersonate.
+
+Explanation from the Google API Docs:
+
+> Only users with access to the Admin APIs can access the Admin SDK Directory API, therefore your service account needs to impersonate one of those users to access the Admin SDK Directory API. Additionally, the user must have logged in at least once and accepted the G Suite Terms of Service.
 
 
 ## License

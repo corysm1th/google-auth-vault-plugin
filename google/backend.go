@@ -55,6 +55,14 @@ func newBackend() *backend {
 						Type:        framework.TypeBool,
 						Description: "Fetch Google Groups",
 					},
+					impersonationPropertyName: &framework.FieldSchema{
+						Type:        framework.TypeString,
+						Description: "Google Account to impersonate for admin API access",
+					},
+					adminServiceAccountPropertyName: &framework.FieldSchema{
+						Type:        framework.TypeString,
+						Description: "Google Service Account with organisation-wide delegation for admin API access (JSON file base64 encoded)",
+					},
 				},
 
 				Callbacks: map[logical.Operation]framework.OperationFunc{
